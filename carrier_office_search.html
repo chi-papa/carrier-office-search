@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>営業所を探す</title>
+  <style>
+    body { font-family: sans-serif; background: #fff; color: #111; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; }
+    input, select, button { font-family: inherit; font-size: 14px; padding: 8px 12px; border-radius: 8px; border: 0.5px solid #ccc; outline: none; }
+    input:focus, select:focus { border-color: #888; }
+    .wrap { max-width: 520px; margin: 2rem auto; padding: 0 1rem; }
+    h2 { font-size: 20px; font-weight: 500; margin: 0 0 0.25rem; }
+    .sub { font-size: 14px; color: #666; margin: 0 0 1.25rem; }
+    label { font-size: 13px; color: #666; display: block; margin-bottom: 5px; }
+    input, select { width: 100%; margin-bottom: 1rem; background: #fff; }
+    .badge { display: flex; align-items: center; gap: 10px; background: #f5f5f5; border-radius: 8px; padding: 9px 14px; margin-bottom: 1rem; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .badge-name { font-size: 14px; font-weight: 500; }
+    .badge-keyword { font-size: 12px; color: #999; margin-left: auto; }
+    .btn { width: 100%; color: #fff; border: none; border-radius: 8px; padding: 10px; font-size: 15px; font-weight: 500; cursor: pointer; transition: opacity 0.15s; margin-bottom: 0.75rem; }
+    .btn:hover { opacity: 0.82; }
+    .note { font-size: 12px; color: #999; text-align: center; }
+    hr { border: none; border-top: 0.5px solid #ddd; margin: 1.25rem 0; }
+    .tip { background: #f5f5f5; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #666; line-height: 1.6; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h2>営業所を探す</h2>
+  <div class="sub">住所と運送会社を選ぶと、Googleマップで最寄り営業所を検索します</div>
+
+  <label>お客様の住所</label>
+  <input type="text" id="address" placeholder="例：大阪市北区梅田1丁目" />
+
+  <label>運送会社</label>
+  <select id="carrier" onchange="onChange()">
+    <option value="sagawa">佐川急便</option>
+    <option value="yamato">ヤマト運輸</option>
+    <option value="yupack">日本郵便</option>
+    <option value="seino">西濃運輸</option>
+    <option value="fukutsu">福山通運</option>
+    <option value="jplogistics">JPロジスティクス</option>
+    <option value="kinbutsurex">近物レックス</option>
+    <option value="tonami">トナミ運輸</option>
+    <option value="daiichi">第一貨物</option>
+    <option value="meitetsuunyu">名鉄運輸</option>
+    <option value="sline">エスライン</option>
+    <option value="seino_sx">セイノースーパーエクスプレス</option>
+    <option value="okaken">岡山県貨物運送</option>
+    <option value="kurumeunsou">久留米運送</option>
+  </select>
+
+  <div class="badge">
+    <div class="dot" id="dot"></div>
+    <div class="badge-name" id="bname"></div>
+    <div class="badge-keyword" id="bkw"></div>
+  </div>
+
+  <button class="btn" id="btn" onclick="doSearch()">Googleマップで営業所を探す</button>
+  <div class="note">※ Googleマップが新しいタブで開きます</div>
+
+  <hr />
+
+  <div class="tip">
+    住所を入力すると、その周辺にある営業所・営業店・センターが地図上に表示されます。複数の候補が出るので、最寄りを選んでください。
+  </div>
+</div>
+
+<script>
+const C = {
+  sagawa:       { name:'佐川急便',                     color:'#1565C0', kw:'佐川急便 営業所' },
+  yamato:       { name:'ヤマト運輸',                   color:'#212121', kw:'ヤマト運輸 営業所' },
+  yupack:       { name:'日本郵便',                     color:'#C62828', kw:'日本郵便 郵便局' },
+  seino:        { name:'西濃運輸',                     color:'#B71C1C', kw:'西濃運輸 営業所' },
+  fukutsu:      { name:'福山通運',                     color:'#1B5E20', kw:'福山通運 営業所' },
+  jplogistics:  { name:'JPロジスティクス',             color:'#4A148C', kw:'JPロジスティクス 営業所' },
+  kinbutsurex:  { name:'近物レックス',                 color:'#E65100', kw:'近物レックス 営業所' },
+  tonami:       { name:'トナミ運輸',                   color:'#006064', kw:'トナミ運輸 営業所' },
+  daiichi:      { name:'第一貨物',                     color:'#37474F', kw:'第一貨物 営業所' },
+  meitetsuunyu: { name:'名鉄運輸',                     color:'#880E4F', kw:'名鉄運輸 営業所' },
+  sline:        { name:'エスライン',                   color:'#558B2F', kw:'エスライン 営業所' },
+  seino_sx:     { name:'セイノースーパーエクスプレス', color:'#BF360C', kw:'セイノースーパーエクスプレス 営業所' },
+  okaken:       { name:'岡山県貨物運送',               color:'#4527A0', kw:'岡山県貨物運送 営業所' },
+  kurumeunsou:  { name:'久留米運送',                   color:'#00695C', kw:'久留米運送 営業所' },
+};
+
+function onChange() {
+  const key = document.getElementById('carrier').value;
+  const c = C[key];
+  document.getElementById('dot').style.background = c.color;
+  document.getElementById('bname').textContent = c.name;
+  document.getElementById('bkw').textContent = '検索キーワード：' + c.kw;
+  document.getElementById('btn').style.background = c.color;
+}
+
+function doSearch() {
+  const addr = document.getElementById('address').value.trim();
+  const key = document.getElementById('carrier').value;
+  const c = C[key];
+  if (!addr) { alert('住所を入力してください'); return; }
+  const query = encodeURIComponent(addr + ' ' + c.kw);
+  const url = `https://www.google.com/maps/search/${query}`;
+  window.open(url, '_blank');
+}
+
+document.getElementById('address').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSearch();
+});
+
+onChange();
+</script>
+</body>
+</html>
